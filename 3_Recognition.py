@@ -1,18 +1,7 @@
-from sklearn.preprocessing import Normalizer
-from PIL import Image
 import cv2
-from keras.models import load_model
 import numpy as np
-
-
-def f(pic, required_size=(160, 160)):
-    image = Image.open(pic)
-    image = image.convert('RGB')
-    pixels = np.asarray(image)
-    image = Image.fromarray(pixels)
-    image = image.resize(required_size)
-    face_array = np.asarray(image)
-    return face_array
+from keras.models import load_model
+from sklearn.preprocessing import Normalizer
 
 
 def get_embedding(model, face_pixels):
@@ -64,17 +53,17 @@ model = load_model('face_net_keras.h5')
 data = np.load('faces-embeddings.npz')
 faces_embeddings, labels = data['arr_0'], data['arr_1']
 
-cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+cam = cv2.VideoCapture(0)
 cascade = cv2.CascadeClassifier("cascade.xml")
 cv2.namedWindow("RECO")
 while True:
     frame, image = cam.read()
     faces = cascade.detectMultiScale(image, 1.3, 5)
     for (x, y, w, h) in faces:
-        im = image[y:y + h, x:x + w]
-        face = cv2.resize(im, (160, 160))
-        img = Image.fromarray(face, 'RGB')
-        img_array = np.array(img)
+        croped = image[y:y + h, x:x + w]
+        colored = cv2.cvtColor(croped, cv2.COLOR_BGR2RGB)
+        resized = cv2.resize(colored, (160, 160))
+        img_array = np.array(resized)
         new_face_emb = get_embedding(model, img_array)
         new_face_emb = np.asarray(new_face_emb)
         new_face_emb = new_face_emb.reshape(1, -1)
