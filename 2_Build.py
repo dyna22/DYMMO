@@ -1,15 +1,13 @@
 import os
+import cv2
 import numpy as np
-from PIL import Image
 from keras.models import load_model
 
 
 def f(pic, required_size=(160, 160)):
-    image = Image.open(pic)
-    image = image.convert('RGB')
-    pixels = np.asarray(image)
-    image = Image.fromarray(pixels)
-    image = image.resize(required_size)
+    image = cv2.imread(pic)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = cv2.resize(image, required_size)
     face_array = np.asarray(image)
     return face_array
 
