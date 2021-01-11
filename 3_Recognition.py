@@ -49,8 +49,8 @@ def predict2(faces_embeddings, labels, new_face_emb):
     return labels[index]
 
 
-model = load_model('face_net_keras.h5')
-data = np.load('faces-embeddings.npz')
+model = load_model('DS/face_net_keras.h5')
+data = np.load('DS/faces-embeddings.npz')
 faces_embeddings, labels = data['arr_0'], data['arr_1']
 
 cam = cv2.VideoCapture(0)
