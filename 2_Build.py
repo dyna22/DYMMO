@@ -20,20 +20,29 @@ def load_faces(directory):
         faces.append(face)
     return faces
 
-
 def load_dataset(directory):
     X, y = list(), list()
-    for subdir in os.listdir(directory):
-        path = directory + subdir + '/'
-        if not os.path.isdir(path):
-            continue
-        faces = load_faces(path)
-        labels = [subdir for _ in range(len(faces))]
-        # print('>>loaded %d examples for class: %s' % (len(faces), subdir))
-        X.extend(faces)
-        y.extend(labels)
+    with open('DS\\dataset.txt', 'a') as input:
+        ds = open('DS\\dataset.txt', 'r').readlines()
+        for subdir in os.listdir(directory):
+            count = 0
+            for line in ds:  # line\n
+                if line == str(subdir + '\n'):
+                    print(subdir + ' is exist')
+                    count += 1
+                    continue
+            if count is not 0:
+                continue
+            input.write(str(subdir) + "\n")
+            path = directory + subdir + '/'
+            if not os.path.isdir(path):
+                continue
+            faces = load_faces(path)
+            labels = [subdir for _ in range(len(faces))]
+            print('>>loaded %d images for class: %s' % (len(faces), subdir))
+            X.extend(faces)
+            y.extend(labels)
     return np.asarray(X), np.asarray(y)
-
 
 def get_embedding(model, face_pixels):
     face_pixels = face_pixels.astype('float32')
@@ -46,18 +55,26 @@ def get_embedding(model, face_pixels):
     return pre[0]
 
 
-train_X, train_y = load_dataset('people/')
+train_X, train_y = load_dataset('DS/people/')
 
-model = load_model('face_net_keras.h5')
+model = load_model('DS/face_net_keras.h5')
 
 newTrainX = list()
 for face_pixels in train_X:
     embedding = get_embedding(model, face_pixels)
     newTrainX.append(embedding)
 newTrainX = np.asarray(newTrainX)
+'''
+if os.path.isdir('DS/faces-embeddings.npz'):
+    print('does not exist model')
+    np.savez_compressed('DS/faces-embeddings.npz', newTrainX, train_y)
 
-np.savez_compressed('faces-embeddings.npz', newTrainX, train_y)
+elif not os.path.isdir('DS/faces-embeddings.npz'):
+    print('exist model')
+'''
+data = np.load('DS/faces-embeddings.npz')
 
-data = np.load('faces-embeddings.npz')
-train_X, train_y = data['arr_0'], data['arr_1']
-# print('Dataset: people=%d' % (train_X.shape[0]))
+train_X = np.concatenate([data['arr_0'], newTrainX])
+train_y = np.concatenate([data['arr_1'], train_y])
+
+np.savez('DS/faces-embeddings.npz', train_X, train_y)
