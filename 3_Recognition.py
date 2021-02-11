@@ -1,11 +1,11 @@
-import cv2
-import numpy as np
-from keras.models import load_model
 from sklearn.preprocessing import Normalizer
+import cv2
+from keras.models import load_model
+import numpy as np
 
 
-def get_embedding(model, face_pixels):
-    face_pixels = face_pixels.astype('float32')
+def get_embedding(model, image):
+    face_pixels = image.astype('float32')
     mean, std = face_pixels.mean(), face_pixels.std()
     face_pixels = (face_pixels - mean) / std
     # transform face into one sample
@@ -36,7 +36,6 @@ def predict(faces_embeddings, labels, new_face_emb):
     return name
 
 
-# OR
 def predict2(faces_embeddings, labels, new_face_emb):
     # normalize input vectors 34an diff ranges
     in_encoder = Normalizer(norm='l2')
@@ -53,7 +52,7 @@ model = load_model('DS/face_net_keras.h5')
 data = np.load('DS/faces-embeddings.npz')
 faces_embeddings, labels = data['arr_0'], data['arr_1']
 
-cam = cv2.VideoCapture(0)
+cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 cascade = cv2.CascadeClassifier("cascade.xml")
 cv2.namedWindow("RECO")
 while True:
@@ -61,7 +60,11 @@ while True:
     faces = cascade.detectMultiScale(image, 1.3, 5)
     for (x, y, w, h) in faces:
         croped = image[y:y + h, x:x + w]
-        colored = cv2.cvtColor(croped, cv2.COLOR_BGR2RGB)
+        gray = cv2.cvtColor(croped, cv2.COLOR_BGR2GRAY)
+        # contrast limited adaptive histogram equalization
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        cl = clahe.apply(gray)
+        colored = cv2.cvtColor(cl, cv2.COLOR_BGR2RGB)
         resized = cv2.resize(colored, (160, 160))
         img_array = np.array(resized)
         new_face_emb = get_embedding(model, img_array)
@@ -77,3 +80,4 @@ while True:
 
 cam.release()
 cv2.destroyAllWindows()
+
