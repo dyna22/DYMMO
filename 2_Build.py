@@ -1,12 +1,15 @@
 import os
-import cv2
 import numpy as np
+import cv2
 from keras.models import load_model
 
 
-def f(pic, required_size=(160, 160)):
-    image = cv2.imread(pic)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+def pic_norm(pic, required_size=(160, 160)):
+    image = cv2.imread(pic, 0)
+    # contrast limited adaptive histogram equalization
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    cl = clahe.apply(image)
+    image = cv2.cvtColor(cl, cv2.COLOR_BGR2RGB)
     image = cv2.resize(image, required_size)
     face_array = np.asarray(image)
     return face_array
@@ -16,9 +19,10 @@ def load_faces(directory):
     faces = list()
     for filename in os.listdir(directory):
         path = directory + filename
-        face = f(path)
+        face = pic_norm(path)
         faces.append(face)
     return faces
+
 
 def load_dataset(directory):
     X, y = list(), list()
@@ -44,8 +48,9 @@ def load_dataset(directory):
             y.extend(labels)
     return np.asarray(X), np.asarray(y)
 
-def get_embedding(model, face_pixels):
-    face_pixels = face_pixels.astype('float32')
+
+def get_embedding(model, image):
+    face_pixels = image.astype('float32')
     mean, std = face_pixels.mean(), face_pixels.std()
     face_pixels = (face_pixels - mean) / std
     # transform face into one sample
@@ -65,13 +70,12 @@ for face_pixels in train_X:
     newTrainX.append(embedding)
 newTrainX = np.asarray(newTrainX)
 '''
-if os.path.isdir('DS/faces-embeddings.npz'):
+if not os.path.isdir('DS/faces-embeddings.npz'):
     print('does not exist model')
     np.savez_compressed('DS/faces-embeddings.npz', newTrainX, train_y)
-
-elif not os.path.isdir('DS/faces-embeddings.npz'):
-    print('exist model')
+else:
 '''
+print('exist model')
 data = np.load('DS/faces-embeddings.npz')
 
 train_X = np.concatenate([data['arr_0'], newTrainX])
